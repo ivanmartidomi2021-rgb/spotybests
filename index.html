@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0a0a14"/>
+  <meta name="description" content="Ivan Alberson Martinez — Mi Spotify Personal"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <title th:text="${appName}">Ivan Beats</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+    :root {
+      --bg:      #0a0a14;
+      --surface: #12121f;
+      --card:    #1a1a2e;
+      --border:  #2a2a45;
+      --a1:      #7c3aed;
+      --a2:      #a855f7;
+      --a3:      #06b6d4;
+      --glow:    rgba(124,58,237,.4);
+      --text:    #f1f0ff;
+      --muted:   #7c7a9e;
+      --bar-h:   88px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    #app {
+      display: grid;
+      grid-template-rows: 1fr var(--bar-h);
+      height: 100dvh;
+    }
+
+    #main {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(180deg, var(--bg) 60%, transparent);
+      padding: 26px 22px 14px;
+      display: flex; align-items: center; gap: 13px;
+    }
+
+    .logo {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--a1), var(--a3));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      box-shadow: 0 0 24px var(--glow);
+      animation: logoGlow 3s ease-in-out infinite;
+    }
+    @keyframes logoGlow {
+      0%,100% { box-shadow: 0 0 22px var(--glow); }
+      50%      { box-shadow: 0 0 42px var(--glow), 0 0 60px rgba(6,182,212,.25); }
+    }
+
+    .logo-text h1 {
+      font-size: 1.2rem; font-weight: 900; letter-spacing: -.5px;
+      background: linear-gradient(90deg, var(--a2), var(--a3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-text p { font-size: .7rem; color: var(--muted); letter-spacing: .05em; }
+
+    .pwa-pill {
+      margin-left: auto;
+      font-size: .62rem; font-weight: 700; color: var(--a3);
+      border: 1px solid var(--a3); border-radius: 100px;
+      padding: 3px 10px; letter-spacing: .08em; opacity: .8;
+    }
+
+    /* ── Install Banner ── */
+    #install-banner {
+      display: none; margin: 0 14px 14px;
+      padding: 13px 16px;
+      background: linear-gradient(90deg,rgba(124,58,237,.2),rgba(6,182,212,.1));
+      border: 1px solid rgba(124,58,237,.4); border-radius: 14px;
+      align-items: center; gap: 12px; font-size: .78rem;
+    }
+    #install-banner span { flex: 1; }
+    #install-banner button {
+      background: linear-gradient(135deg,var(--a1),var(--a2));
+      color: #fff; border: none; border-radius: 8px;
+      padding: 7px 15px; font-size: .75rem; font-weight: 600; cursor: pointer;
+    }
+
+    /* ── Hero ── */
+    #hero {
+      margin: 0 14px 20px; border-radius: 20px;
+      background: linear-gradient(135deg,#1e1040 0%,#0d1f3c 50%,#0a0a14 100%);
+      border: 1px solid var(--border); padding: 20px 18px;
+      position: relative; overflow: hidden;
+    }
+    #hero::before {
+      content:''; position:absolute; width:260px; height:260px;
+      background:radial-gradient(circle,rgba(124,58,237,.25),transparent 70%);
+      top:-80px; right:-60px; pointer-events:none;
+    }
+
+    .hero-label { font-size:.62rem; font-weight:700; letter-spacing:.15em; color:var(--a3); text-transform:uppercase; margin-bottom:10px; }
+
+    #hero-disc {
+      width:76px; height:76px; border-radius:50%;
+      background:linear-gradient(135deg,var(--a1),#1e1040 60%,var(--a3));
+      border:3px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:center;
+      font-size:30px; margin-bottom:12px; position:relative;
+    }
+    #hero-disc::after {
+      content:''; position:absolute; width:20px; height:20px;
+      border-radius:50%; background:var(--bg); border:2px solid rgba(255,255,255,.1);
+    }
+    #hero-disc.spin { animation:spin 4s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    #hero-title  { font-size:1.25rem; font-weight:800; margin-bottom:3px; }
+    #hero-artist { font-size:.78rem; color:var(--muted); margin-bottom:16px; }
+
+    /* Visualizer */
+    #viz { display:flex; align-items:flex-end; gap:3px; height:30px; margin-bottom:16px; }
+    .vbar { width:4px; border-radius:2px; background:linear-gradient(180deg,var(--a2),var(--a3)); min-height:4px; opacity:.6; }
+    .vbar.on { opacity:1; }
+
+    /* Progress */
+    #prog-track {
+      width:100%; height:4px; background:var(--border); border-radius:2px;
+      cursor:pointer; margin-bottom:5px;
+    }
+    #prog-fill {
+      height:100%; background:linear-gradient(90deg,var(--a1),var(--a3));
+      border-radius:2px; width:0%; transition:width .4s linear;
+    }
+    .time-row { display:flex; justify-content:space-between; font-size:.66rem; color:var(--muted); margin-bottom:14px; }
+
+    /* Hero Controls */
+    .hctrl { display:flex; align-items:center; gap:16px; }
+    .cbtn {
+      background:none; border:none; cursor:pointer;
+      color:var(--muted); font-size:1.15rem; padding:6px;
+      border-radius:8px; transition:color .2s,transform .15s; line-height:1;
+    }
+    .cbtn:hover { color:var(--text); transform:scale(1.15); }
+    .cbtn.active-tog { color:var(--a3); }
+    .playbtn {
+      width:48px; height:48px; border-radius:50%;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      color:#fff; font-size:1.35rem;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 6px 24px var(--glow); transition:transform .15s,box-shadow .15s;
+    }
+    .playbtn:hover { transform:scale(1.08); box-shadow:0 8px 32px var(--glow); }
+
+    /* Track List */
+    .sec-label { padding:0 18px 10px; font-size:.68rem; font-weight:700; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+
+    #tracklist { display:flex; flex-direction:column; gap:2px; padding:0 10px; }
+
+    .track {
+      display:grid; grid-template-columns:44px 1fr auto;
+      align-items:center; gap:10px; padding:9px 10px;
+      border-radius:12px; cursor:pointer;
+      transition:background .18s; border:1px solid transparent;
+    }
+    .track:hover { background:var(--card); border-color:var(--border); }
+    .track.active {
+      background:linear-gradient(90deg,rgba(124,58,237,.15),rgba(6,182,212,.06));
+      border-color:rgba(124,58,237,.3);
+    }
+
+    .t-icon {
+      width:44px; height:44px; border-radius:10px;
+      background:var(--card); border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+    }
+    .track.active .t-icon { background:linear-gradient(135deg,var(--a1),var(--a2)); border-color:transparent; }
+
+    .t-info h3 { font-size:.86rem; font-weight:600; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .t-info p  { font-size:.7rem; color:var(--muted); }
+    .track.active .t-info h3 { color:var(--a2); }
+
+    .t-dur { font-size:.7rem; color:var(--muted); }
+
+    /* EQ animation */
+    .eq { display:none; gap:2px; align-items:flex-end; height:16px; }
+    .track.active .eq { display:flex; }
+    .eq-b { width:3px; border-radius:1px; background:var(--a2); animation:eq .6s ease infinite alternate; }
+    .eq-b:nth-child(2) { animation-delay:.2s; animation-duration:.5s; }
+    .eq-b:nth-child(3) { animation-delay:.4s; animation-duration:.7s; }
+    @keyframes eq { from{height:4px} to{height:14px} }
+
+    /* Credits */
+    .credits { text-align:center; padding:24px 16px 8px; font-size:.66rem; color:var(--muted); }
+    .credits strong { color:var(--a2); font-weight:700; }
+
+    /* ── Bottom Bar ── */
+    #player-bar {
+      background:rgba(18,18,31,.96); backdrop-filter:blur(20px);
+      border-top:1px solid var(--border);
+      display:flex; align-items:center; padding:0 14px; gap:12px;
+      height:var(--bar-h);
+    }
+
+    .bar-thumb {
+      width:44px; height:44px; border-radius:10px; flex-shrink:0;
+      background:linear-gradient(135deg,var(--a1),#0d1f3c);
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; border:1px solid var(--border);
+    }
+    .bar-info { flex:1; overflow:hidden; }
+    .bar-info h4 { font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .bar-info p  { font-size:.66rem; color:var(--muted); }
+
+    .bar-ctrls { display:flex; gap:4px; align-items:center; }
+    .bbtn { background:none; border:none; color:var(--muted); font-size:1.05rem; cursor:pointer; padding:7px; border-radius:8px; transition:color .2s,background .2s; line-height:1; }
+    .bbtn:hover { color:var(--text); background:var(--card); }
+    .bplay {
+      width:38px; height:38px; border-radius:50%;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      color:#fff; font-size:1rem; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 16px var(--glow);
+    }
+    .bplay:hover { transform:scale(1.08); }
+
+    .vol-wrap { display:flex; align-items:center; gap:5px; }
+    .vol-wrap span { font-size:.85rem; color:var(--muted); }
+    input[type=range] { -webkit-appearance:none; width:68px; height:4px; border-radius:2px; background:var(--border); cursor:pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--a2); }
+
+    @media(max-width:400px){ .vol-wrap{display:none} }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="main">
+
+    <header>
+      <div class="logo">🎧</div>
+      <div class="logo-text">
+        <h1 th:text="${appName}">Ivan Beats</h1>
+        <p th:text="${author}">Ivan Alberson Martinez</p>
+      </div>
+      <div class="pwa-pill">OFFLINE OK</div>
+    </header>
+
+    <!-- Install banner PWA -->
+    <div id="install-banner">
+      <span>📲 Instala la app para usarla sin internet</span>
+      <button id="install-btn">Instalar</button>
+    </div>
+
+    <!-- Hero player -->
+    <div id="hero">
+      <div class="hero-label">▶ Reproduciendo ahora</div>
+      <div id="hero-disc">🎵</div>
+      <div id="hero-title">Selecciona una canción</div>
+      <div id="hero-artist" th:text="${author}">Ivan Alberson Martinez</div>
+
+      <div id="viz"></div>
+
+      <div id="prog-track"><div id="prog-fill"></div></div>
+      <div class="time-row">
+        <span id="t-cur">0:00</span>
+        <span id="t-tot">0:00</span>
+      </div>
+
+      <div class="hctrl">
+        <button class="cbtn" id="btn-shuf">🔀</button>
+        <button class="cbtn" id="btn-prev">⏮</button>
+        <button class="cbtn playbtn" id="hero-play">▶</button>
+        <button class="cbtn" id="btn-next">⏭</button>
+        <button class="cbtn" id="btn-rep">🔁</button>
+      </div>
+    </div>
+
+    <!-- Track list generado por Thymeleaf -->
+    <div class="sec-label">Tu Playlist</div>
+    <div id="tracklist">
+      <div th:each="track : ${tracks}"
+           class="track"
+           th:data-file="${track.file}"
+           th:data-title="${track.title}"
+           th:data-emoji="${track.emoji}"
+           th:data-id="${track.id}">
+
+        <div class="t-icon">
+          <span class="t-emoji" th:text="${track.emoji}">🎵</span>
+          <div class="eq">
+            <div class="eq-b" style="height:6px"></div>
+            <div class="eq-b" style="height:10px"></div>
+            <div class="eq-b" style="height:4px"></div>
+          </div>
+        </div>
+
+        <div class="t-info">
+          <h3 th:text="${track.title}">Canción</h3>
+          <p th:text="${track.artist}">Ivan Alberson Martinez</p>
+        </div>
+
+        <div class="t-dur">—:——</div>
+      </div>
+    </div>
+
+    <div class="credits">
+      Hecho con ❤️ por <strong th:text="${author}">Ivan Alberson Martinez</strong><br/>
+      Mini Spotify Personal · Spring Boot · PWA · Funciona sin internet
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div id="player-bar">
+    <div class="bar-thumb" id="bar-thumb">🎵</div>
+    <div class="bar-info">
+      <h4 id="bar-title">Nada reproduciendo</h4>
+      <p th:text="${author}">Ivan Alberson Martinez</p>
+    </div>
+    <div class="bar-ctrls">
+      <button class="bbtn" id="bar-prev">⏮</button>
+      <button class="bbtn bplay" id="bar-play">▶</button>
+      <button class="bbtn" id="bar-next">⏭</button>
+    </div>
+    <div class="vol-wrap">
+      <span>🔊</span>
+      <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"/>
+    </div>
+  </div>
+</div>
+
+<audio id="aud" preload="auto"></audio>
+
+<script>
+  // ─── Estado ───────────────────────────────
+  let idx = -1, playing = false, shuffle = false, repeat = false;
+  const aud = document.getElementById('aud');
+  const tracks = Array.from(document.querySelectorAll('.track'));
+
+  // ─── Visualizador ─────────────────────────
+  const viz = document.getElementById('viz');
+  const bars = Array.from({length:26}, () => {
+    const b = document.createElement('div');
+    b.className = 'vbar';
+    b.style.height = (4 + Math.random()*18) + 'px';
+    viz.appendChild(b);
+    return b;
+  });
+  let visTimer = null;
+  const startVis = () => { clearInterval(visTimer); visTimer = setInterval(() => bars.forEach(b => { b.style.height=(4+Math.random()*24)+'px'; b.classList.toggle('on',Math.random()>.3); }), 110); };
+  const stopVis  = () => { clearInterval(visTimer); bars.forEach((b,i) => { b.style.height=(4+Math.sin(i*.4)*8)+'px'; b.classList.remove('on'); }); };
+
+  // ─── Formato tiempo ───────────────────────
+  const fmt = s => isFinite(s) ? `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}` : '—:——';
+
+  // ─── Cargar duración de cada pista ────────
+  tracks.forEach(el => {
+    const a = new Audio(); a.src = el.dataset.file;
+    a.addEventListener('loadedmetadata', () => { el.querySelector('.t-dur').textContent = fmt(a.duration); });
+  });
+
+  // ─── Cargar y reproducir ──────────────────
+  function load(i, auto = false) {
+    idx = i;
+    const el = tracks[i];
+    aud.src = el.dataset.file; aud.load();
+    document.getElementById('hero-title').textContent  = el.dataset.title;
+    document.getElementById('hero-disc').textContent   = el.dataset.emoji;
+    document.getElementById('bar-thumb').textContent   = el.dataset.emoji;
+    document.getElementById('bar-title').textContent   = el.dataset.title;
+    tracks.forEach((t,j) => t.classList.toggle('active', j===i));
+    if (auto) play();
+  }
+
+  function play() {
+    aud.play().then(() => { playing=true; updUI(true); startVis(); document.getElementById('hero-disc').classList.add('spin'); }).catch(()=>{});
+  }
+  function pause() {
+    aud.pause(); playing=false; updUI(false); stopVis(); document.getElementById('hero-disc').classList.remove('spin');
+  }
+  function toggle() { if(idx<0){load(0,true);return;} playing?pause():play(); }
+  function next()   { load(shuffle?Math.floor(Math.random()*tracks.length):(idx+1)%tracks.length, true); }
+  function prev()   { if(aud.currentTime>3){aud.currentTime=0;return;} load((idx-1+tracks.length)%tracks.length,playing); }
+
+  function updUI(p) {
+    ['hero-play','bar-play'].forEach(id => document.getElementById(id).textContent = p?'⏸':'▶');
+  }
+
+  // ─── Eventos audio ────────────────────────
+  aud.addEventListener('timeupdate', () => {
+    const pct = aud.duration ? (aud.currentTime/aud.duration)*100 : 0;
+    document.getElementById('prog-fill').style.width = pct+'%';
+    document.getElementById('t-cur').textContent = fmt(aud.currentTime);
+    document.getElementById('t-tot').textContent = fmt(aud.duration);
+  });
+  aud.addEventListener('ended', () => { repeat?(aud.currentTime=0,play()):next(); });
+
+  // ─── Controles ────────────────────────────
+  document.getElementById('hero-play').addEventListener('click', toggle);
+  document.getElementById('bar-play').addEventListener('click', toggle);
+  document.getElementById('btn-next').addEventListener('click', next);
+  document.getElementById('btn-prev').addEventListener('click', prev);
+  document.getElementById('bar-next').addEventListener('click', next);
+  document.getElementById('bar-prev').addEventListener('click', prev);
+
+  document.getElementById('btn-shuf').addEventListener('click', function(){
+    shuffle=!shuffle; this.classList.toggle('active-tog',shuffle);
+  });
+  document.getElementById('btn-rep').addEventListener('click', function(){
+    repeat=!repeat; this.classList.toggle('active-tog',repeat);
+  });
+
+  document.getElementById('prog-track').addEventListener('click', e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    aud.currentTime = ((e.clientX-r.left)/r.width)*(aud.duration||0);
+  });
+
+  document.getElementById('vol').addEventListener('input', e => { aud.volume = e.target.value; });
+  aud.volume = 0.8;
+
+  tracks.forEach((el,i) => el.addEventListener('click', () => load(i,true)));
+
+  document.addEventListener('keydown', e => {
+    if(e.code==='Space'){e.preventDefault();toggle();}
+    if(e.code==='ArrowRight') next();
+    if(e.code==='ArrowLeft')  prev();
+  });
+
+  // ─── PWA Install ──────────────────────────
+  let deferredPrompt = null;
+  const banner = document.getElementById('install-banner');
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt=e; banner.style.display='flex';
+  });
+  document.getElementById('install-btn').addEventListener('click', async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    banner.style.display='none'; deferredPrompt=null;
+  });
+
+  // ─── Service Worker ───────────────────────
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.warn);
+  }
+</script>
+</body>
+</html>
